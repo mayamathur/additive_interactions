@@ -1,0 +1,18 @@
+--- interaction_code.R	2021-02-22 01:21:25.804197479 -0500
++++ interaction_code_patched_ercas.R	2021-02-22 01:21:11.234266000 -0500
+@@ -27,6 +27,15 @@
+   # requires that the two exposures of interest be listed first in model
+   #   in order to get the right variables in the interaction string
+   interaction.string = paste(exposure1, exposure2, sep=":") 
++  if (!(interaction.string %in% names(coef(model)))) {
++    interaction.string = sprintf("I(%s * %s)", exposure1, exposure2)
++  }
++  if (!(interaction.string %in% names(coef(model)))) {
++    stop(sprintf(
++      "Could not identify the interaction coefficient; try re-entering it as `%s*%s`",
++      exposure1, exposure2
++    ))
++  }
+   keepers = c(exposure1, exposure2, interaction.string)
+   
+   # get variance-covariance matrix of the GLM
