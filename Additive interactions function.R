@@ -23,13 +23,17 @@ additive_interactions = function( model, dat=NULL, monotone=0, CI.level=0.95, re
   # extract exposure variable names
   exposure1 = names(coef(model))[2]
   exposure2 = names(coef(model))[3]
- 
+  
   # variables to keep for delta method
   # requires that the two exposures of interest be listed first in model
   #   in order to get the right variables in the interaction string
-  interaction.string = paste(exposure1, exposure2, sep=":")
+  interaction.string = paste(exposure1, exposure2, sep=":") 
+  
+  if ( !(interaction.string %in% names( coef(model) ) ) ) {
+    stop("Could not identify the interaction coefficient in the model formula, possibly because you used the I() operator. Please enter the interaction using * instead.")
+  }
   keepers = c(exposure1, exposure2, interaction.string)
-
+  
   
   # get variance-covariance matrix of the GLM
   V = as.matrix( vcov(model) )
@@ -81,8 +85,8 @@ additive_interactions = function( model, dat=NULL, monotone=0, CI.level=0.95, re
       OR01 = exp(b01)
       OR11 = exp( b10 + b01 + bint )
     }
-   }
-
+  }
+  
   # RERI (VanderWeele pg. 258-259)
   RERI = OR11 - exp(b10) - exp(b01) + 1
   
@@ -126,8 +130,8 @@ additive_interactions = function( model, dat=NULL, monotone=0, CI.level=0.95, re
   int.contrib = RERI / denom
   
   SE.1 = deltamethod( ~ ( exp(x1) - 1 ) / ( exp( x1 + x2 + x3 ) - 1 ),
-                       mean=c( coef(model)[exposure1], coef(model)[exposure2], coef(model)[interaction.string] ),
-                       cov=V2)
+                      mean=c( coef(model)[exposure1], coef(model)[exposure2], coef(model)[interaction.string] ),
+                      cov=V2)
   SE.2 = deltamethod( ~ ( exp(x2) - 1 ) / ( exp( x1 + x2 + x3 ) - 1 ),
                       mean=c( coef(model)[exposure1], coef(model)[exposure2], coef(model)[interaction.string] ),
                       cov=V2)
