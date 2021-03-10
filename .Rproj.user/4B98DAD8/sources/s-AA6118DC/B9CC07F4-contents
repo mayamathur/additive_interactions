@@ -1,0 +1,17 @@
+
+# works
+m = glm(Y ~ E1*E2 + C, family=binomial(link="logit"))
+additive_interactions(m)
+
+# doesn't work
+m = glm(Y ~ I(E1*E2) + C, family=binomial(link="logit"))
+additive_interactions(m)
+
+
+
+additive_interactions_2(m)
+
+
+
+m = glm(Y ~ I(E1*E2) + C, family=binomial(link="logit"))
+additive_interactions_2(m)

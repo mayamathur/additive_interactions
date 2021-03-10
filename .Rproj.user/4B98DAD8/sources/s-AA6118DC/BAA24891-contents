@@ -1,0 +1,116 @@
+---
+title: "Vignettes for `additive_interactions`"
+author: "Maya B. Mathur & Tyler J. VanderWeele"
+date: "March 8, 2017"
+output: pdf_document
+---
+
+```{r echo=FALSE}
+setwd("~/Dropbox/Personal computer/Independent studies/Epidemiology letter additive interactions/Additive interactions (linked to OSF)")
+source("Additive interactions function.R")
+```
+
+## Example 1: Exposures positively associated with outcome
+
+Simulate data with two exposures (`E1` and `E2`) and confounder `C`: 
+
+
+```{r echo=TRUE, warning=TRUE}
+n=5000
+set.seed(451)
+E1 = rbinom(n, size=1, p=0.2)  # generate a binary genetic exposure
+set.seed(1984)
+E2 = rbinom(n, size=1, p=.75)
+
+# binary confounder that is correlated with both exposures
+# linear predictor from which to generate C
+linpred = 1 + 1.5*E1 + 2.2*E2
+# expit to back-transform logits into probabilities
+probs = exp(linpred) / (1 + exp(linpred))
+# generate C
+set.seed(451)
+C = rbinom(n, size=1, p=probs)
+
+# true betas for Y
+beta0 = log(1)
+betaE1 = log(1.17)
+betaE2 = log(1.15)
+betaE1E2 = log(1.7)
+
+# for generation of Y
+linpred = beta0 + betaE1*E1 + betaE2*E2 + betaE1E2*E1*E2
+probs = exp(linpred) / (1 + exp(linpred))
+set.seed(22)
+Y = rbinom(n, size=1, p=probs)
+```
+
+First fit the logistic regression model including firstly the main effects and interaction of the exposures of interest, followed by any covariates:
+
+```{r echo=TRUE, warning=TRUE}
+m = glm(Y ~ E1*E2 + C, family=binomial(link="logit"))
+summary(m)
+```
+
+Then pass it to `additive_interactions`:
+
+```{r echo=TRUE, warning=TRUE}
+additive_interactions(m)
+```
+
+We can see how inference on the mechanistic interactions becomes less stringent if we assume monotonicity for at least one of the exposures: 
+
+
+```{r echo=TRUE, warning=TRUE}
+additive_interactions(m, monotone=1)
+```
+
+
+```{r echo=FALSE, warning=TRUE}
+# compare to existing packages
+# library(epiR)
+# epi.interaction(model = m, coeff = c(2,3,4), type = "RERI", conf.level = 0.95)
+```
+
+## Example 2: Exposures negatively associated with outcome
+
+Here, the exposure and interaction effects are negatively associated with the outcome, so the function will automatically recode the exposures against new reference levels:
+
+```{r echo=TRUE, warning=TRUE}
+# preventive case
+# true betas
+beta0 = log(1)
+betaE1 = log(0.95)
+betaE2 = log(0.9)
+betaE1E2 = log(0.67)
+
+# for generation of Y
+linpred = beta0 + betaE1*E1 + betaE2*E2 + betaE1E2*E1*E2
+probs = exp(linpred) / (1 + exp(linpred))
+set.seed(22)
+Y = rbinom(n, size=1, p=probs)
+
+# put in dataframe since the function will need to recode exposures
+d = data.frame(E1, E2, Y)
+```
+
+Again, begin by fitting the logistic regression model:
+
+```{r echo=TRUE, warning=TRUE}
+m = glm(Y ~ E1*E2 + C, family=binomial(link="logit"), data=d)
+summary(m)
+```
+
+Pass it, along with the dataframe, to `additive_interactions`:
+
+```{r echo=TRUE, warning=TRUE}
+additive_interactions(m, dat=d, recode=TRUE)
+```
+
+Note that interpretation of these results after recoding requires care; see Knol et al. (2011) for a detailed example. 
+
+
+## References
+
+1. Knol, M. J., VanderWeele, T. J., Groenwold, R. H., Klungel, O. H., Rovers, M. M., & Grobbee, D. E. (2011). Estimating measures of interaction on an additive scale for preventive exposures. *European Journal of Epidemiology*, 26(6), 433-438.
+
+
